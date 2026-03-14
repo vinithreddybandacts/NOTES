@@ -1,0 +1,211 @@
+# Techniques for Agile Estimation (Story Points, Planning Poker)
+
+## Overview: What this is and Why it Matters
+
+Agile estimation techniques—most notably **story points** and **planning poker**—are methods teams use to estimate the relative size, complexity, and effort of work items (typically user stories) in Agile product development. Rather than trying to predict exact hours or days, these approaches focus on **relative comparison** and **shared team understanding**, which makes planning more reliable when facing uncertainty.
+
+These techniques matter because they:
+
+- Encourage **collaboration and shared understanding** among developers, testers, product owners, and stakeholders.
+- Reduce waste caused by false precision in time estimates.
+- Help teams plan and forecast work using a stable measure (velocity) that can be improved over time.
+- Support adaptive planning: as teams learn, estimates become more accurate and planning becomes more predictable.
+
+## 1. Core Concepts, Principles, and Theory
+
+### 1.1. Relative Estimation
+
+Relative estimation is the principle of comparing work items against each other instead of assigning absolute time. A team decides that a certain story is a “baseline” (e.g., 2 story points). Other stories are sized relative to that baseline (e.g., a story twice as hard is 4 points).
+
+Key theoretical benefits:
+
+- **Cognitive ease**: Humans are better at comparing than quantifying.
+- **Noise reduction**: It avoids grossly inaccurate single-point forecasts.
+- **Stable velocity**: Over time, relative sizes tend to average out.
+
+### 1.2. Complexity, Effort, and Uncertainty
+
+Story points are typically a blend of:
+
+- **Effort** (how much labor is required)
+- **Complexity** (how difficult the work is)
+- **Uncertainty/Risk** (how much is unknown)
+
+The team decides what factors to weigh, but it is *critical* they have a shared definition (e.g., “a 5-point story is about twice as complex + uncertain as a 2-point story”).
+
+### 1.3. Velocity and Forecasting
+
+**Velocity** is the sum of story points completed in an iteration (usually a sprint). It becomes a forecasting tool:
+
+- If a team’s average velocity is 24 points per sprint, they can forecast how many sprints are needed to complete a backlog of ~120 points (about 5 sprints).
+
+Velocity is a **planning tool** not a performance metric; treating it as a target can lead to gaming.
+
+## 2. Key Terminology and Precise Definitions
+
+- **User Story**: A small unit of work expressed from the user’s perspective (e.g., “As a user, I can reset my password so I can regain access”).
+- **Story Point**: A unitless measure representing relative effort/complexity/uncertainty.
+- **Estimate**: The act of assigning a story point value to a user story.
+- **Planning Poker (Estimation Poker)**: A collaborative estimation technique where team members privately choose a point value and reveal simultaneously.
+- **Reference Story**: A story used as a baseline to compare other stories against.
+- **Velocity**: The rate at which a team completes story points in a sprint.
+- **Backlog Refinement (Grooming)**: The ongoing activity of clarifying, splitting, and estimating backlog items.
+
+## 3. Major Sub-Topics and Related Areas (Chapter/Section Outline)
+
+### 3.1. Foundations of Agile Estimation
+
+- Why traditional time-based estimation fails in software.
+- Psychological foundations (relative judgment, anchoring bias).
+
+### 3.2. Choosing a Sizing Scale
+
+- Fibonacci sequence (1, 2, 3, 5, 8, 13…) and why it helps.
+- Modified linear scales (T-shirt sizes: XS/S/M/L/XL).
+- Why smaller scales (1–5) may work for mature teams.
+
+### 3.3. Planning Poker: Process and Variants
+
+- Standard planning poker flow (read story, discuss, estimate, reveal, consensus).
+- Online tools vs physical cards.
+- Variants: affinity estimation, bucket sorting, silent grouping.
+
+### 3.4. Estimation in Different Frameworks
+
+- Scrum (sprint planning, backlog refinement, velocity-driven forecasting).
+- Kanban (use cycle time and throughput, and optionally story points for sizing).
+
+### 3.5. Handling Uncertainty and Risk
+
+- Using “spikes” (time-boxed research stories) to reduce uncertainty.
+- Explicitly modeling risk: “fibonacci + ?” or dual estimates (best/worst).
+
+### 3.6. Measuring and Improving Estimation
+
+- Tracking estimate accuracy (e.g., compare planned vs actual, measure throughput).
+- Calibration techniques (revisiting reference stories).
+
+## 4. Real-World Examples and Use Cases
+
+### 4.1. Example: Estimating a Web Feature
+
+**Context**: Team building a feature to allow users to leave reviews.
+
+1. Break the feature into backlog items:
+   - Add review submission form (frontend)
+   - Validate and store reviews (backend API)
+   - Display reviews (frontend)
+   - Review moderation workflow (admin)
+
+2. Pick a reference story: “Display reviews” is agreed as 3 points.
+3. Estimate relative to reference:
+   - “Add review form” = 2 points (similar effort but less complex)
+   - “Validate/store reviews” = 5 points (more integration + edge cases)
+   - “Moderation workflow” = 8 points (requires permissions, audit trail)
+
+4. Sprint forecast: With a velocity of 20 points, this set (18 points) fits into one sprint.
+
+### 4.2. Example: Planning Poker in Action (Pseudo-code / Scripted)
+
+Below is a simple example of how a team might implement a planning poker facilitator in Python to run asynchronous estimation sessions (useful for distributed teams):
+
+```python
+import random
+
+STORY_POINTS = [1, 2, 3, 5, 8, 13, 20]
+
+def collect_estimates(story, participants):
+	# Each participant privately chooses a value
+	estimates = {p: random.choice(STORY_POINTS) for p in participants}
+	return estimates
+
+def reveal(estimates):
+	print(f"Estimates for '{story}':")
+	for p, v in estimates.items():
+		print(f"  {p}: {v}")
+
+story = "As a user, I can reset my password"
+participants = ["Alice", "Bob", "Carl"]
+estimates = collect_estimates(story, participants)
+reveal(estimates)
+```
+
+This example is a starting point; real tooling adds a discussion loop until convergence.
+
+## 5. Practical How-To: Getting Started
+
+### 5.1. Setup
+
+1. Choose a **consistent scale** (Fibonacci is common).
+2. Decide what factors are included in “story points”. Write a short team definition: e.g., “We count effort + complexity + uncertainty, assuming a unit story (2 points) is a small, well-understood task that can be completed within one day by one person.”
+3. Select or create a **reference story** and agree on its size.
+
+### 5.2. Running a Planning Poker Session
+
+1. Select the story to estimate.
+2. Read and clarify the acceptance criteria.
+3. Each team member chooses a card privately (physical or digital).
+4. Reveal simultaneously.
+5. Discuss differences (especially outliers).
+6. Re-estimate until consensus (or reasonable agreement) is reached.
+
+### 5.3. Integrating into Sprint Planning
+
+1. Use the team’s **velocity** to set a realistic sprint capacity.
+2. Pull stories from the top of the backlog until you reach the velocity.
+3. Leave buffer for unplanned tasks (e.g., 10–20% of capacity).
+
+## 6. Common Pitfalls, Anti-Patterns, and How to Avoid Them
+
+### 6.1. Treating Story Points as Time
+
+**Pitfall**: Using points interchangeably with hours causes confusion and undermines relative estimation.
+
+**Avoidance**: Reinforce that points are relative; if time is needed, do a separate task/time estimation.
+
+### 6.2. Using Velocity as a Performance Metric
+
+**Pitfall**: Management pressures teams to “do more points,” leading to inflated estimates or gaming.
+
+**Avoidance**: Use velocity for forecasting only; discuss with stakeholders how it can be misleading as a productivity metric.
+
+### 6.3. Over-Estimating to Reduce Risk
+
+**Pitfall**: Teams inflate story points to account for unknowns; this destroys the usefulness of velocity.
+
+**Avoidance**: Use spikes or split stories to reduce uncertainty, and keep estimates honest.
+
+### 6.4. Not Re-Establishing Reference Points
+
+**Pitfall**: Over time, the team’s idea of what “5 points” means drifts.
+
+**Avoidance**: Periodically revisit reference stories and calibrate (during retrospectives or refinement sessions).
+
+## 7. What Success Looks Like and How to Evaluate It
+
+### 7.1. Success Signals
+
+- The team reliably completes planned work and has fewer surprises.
+- Sprint commitments are meaningful and the team is not routinely carrying over work.
+- Stakeholders can make informed decisions based on forecasts.
+- Team members have shared understanding and use estimation to prompt discussion.
+
+### 7.2. Evaluation Metrics
+
+- **Forecast accuracy**: Compare planned story points vs completed points over multiple sprints.
+- **Predictability**: Track how often the team meets sprint goals.
+- **Estimate drift**: Monitor whether point values remain consistent over time.
+
+## 8. Next Steps / Further Reading
+
+### 8.1. Practical Next Steps
+
+1. Run a **pilot estimation session** with a small set of stories.
+2. Collect velocity data for 3–4 sprints.
+3. Review outcomes in a retrospective and adjust estimation guidelines.
+
+### 8.2. Further Reading
+
+- Mike Cohn, *Agile Estimating and Planning* (Prentice Hall)
+- Roman Pichler, *Agile Product Management with Scrum* (Addison-Wesley)
+- Articles on the “Cone of Uncertainty” and estimation bias.
