@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Markdown Explorer</title>
+  <style>
+    :root {
+      --bg: #0d1117;
+      --fg: #c9d1d9;
+      --panel: #161b22;
+      --panel-border: rgba(110, 118, 129, 0.25);
+      --accent: #58a6ff;
+      --muted: rgba(203, 213, 225, 0.65);
+      --shadow: rgba(0, 0, 0, 0.35);
+      --radius: 12px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: linear-gradient(160deg, #0d1117 0%, #070a0f 70%);
+      color: var(--fg);
+      height: 100vh;
+      display: flex;
+    }
+
+    #app {
+      display: grid;
+      grid-template-columns: minmax(260px, 340px) 1fr;
+      width: 100%;
+      height: 100vh;
+    }
+
+    .sidebar {
+      background: var(--panel);
+      border-right: 1px solid var(--panel-border);
+      display: flex;
+      flex-direction: column;
+      padding: 12px;
+      overflow: hidden;
+    }
+
+    .sidebar-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--panel-border);
+    }
+
+    .sidebar-header h1 {
+      margin: 0;
+      font-size: 0.95rem;
+      letter-spacing: -0.02em;
+    }
+
+    .sidebar-header button {
+      background: none;
+      border: 1px solid var(--panel-border);
+      border-radius: 999px;
+      padding: 4px 8px;
+      color: var(--fg);
+      font-size: 0.8rem;
+      cursor: pointer;
+    }
+
+    .sidebar-header button:hover {
+      background: rgba(88, 166, 255, 0.15);
+    }
+
+    #search {
+      width: 100%;
+      margin-top: 10px;
+      padding: 8px 10px;
+      border-radius: 10px;
+      border: 1px solid var(--panel-border);
+      background: rgba(255, 255, 255, 0.06);
+      color: var(--fg);
+    }
+
+    .tree {
+      margin-top: 10px;
+      flex: 1;
+      overflow: auto;
+      padding-right: 4px;
+    }
+
+    .tree ul {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+    }
+
+    .tree li {
+      padding: 4px 0;
+      font-size: 0.9rem;
+      line-height: 1.25;
+    }
+
+    .tree button {
+      background: none;
+      border: none;
+      padding: 0;
+      font: inherit;
+      text-align: left;
+      width: 100%;
+      display: inline-flex;
+      gap: 6px;
+      align-items: center;
+      color: var(--fg);
+      cursor: pointer;
+    }
+
+    .tree button:hover {
+      background: rgba(88, 166, 255, 0.12);
+      border-radius: 8px;
+    }
+
+    .tree .folder > button::before {
+      content: "\25B6";
+      display: inline-block;
+      width: 14px;
+      transform: rotate(0deg);
+      transition: transform 0.1s ease;
+    }
+
+    .tree .folder.open > button::before {
+      transform: rotate(90deg);
+    }
+
+    .tree .file::before {
+      content: "\1F4C4";
+      display: inline-block;
+      width: 14px;
+    }
+
+    .tree .selected > button {
+      background: rgba(88, 166, 255, 0.2);
+      border-radius: 8px;
+    }
+
+    .content {
+      display: flex;
+      flex-direction: column;
+      background: rgba(9, 11, 16, 0.7);
+      overflow: hidden;
+    }
+
+    .toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--panel-border);
+      background: rgba(0, 0, 0, 0.25);
+    }
+
+    .toolbar h2 {
+      margin: 0;
+      font-size: 1rem;
+    }
+
+    .toolbar button {
+      border: 1px solid var(--panel-border);
+      border-radius: 999px;
+      padding: 6px 10px;
+      background: none;
+      color: var(--fg);
+      cursor: pointer;
+      font-size: 0.85rem;
+    }
+
+    .toolbar button:hover {
+      background: rgba(88, 166, 255, 0.13);
+    }
+
+    .markdown {
+      padding: 20px 26px;
+      overflow: auto;
+      flex: 1;
+    }
+
+    .markdown h1,
+    .markdown h2,
+    .markdown h3,
+    .markdown h4 {
+      margin-top: 1.6em;
+      margin-bottom: 0.55em;
+      line-height: 1.2;
+      color: #ffffff;
+    }
+
+    .markdown p {
+      margin: 0.75em 0;
+      line-height: 1.6;
+      color: rgba(203, 213, 225, 0.95);
+    }
+
+    .markdown code {
+      background: rgba(203, 213, 225, 0.12);
+      padding: 2px 4px;
+      border-radius: 6px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 0.92rem;
+    }
+
+    .markdown pre {
+      background: rgba(15, 23, 42, 0.95);
+      color: #c9d1d9;
+      padding: 12px;
+      border-radius: 14px;
+      overflow: auto;
+      margin: 1em 0;
+    }
+
+    .markdown a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+
+    .markdown a:hover {
+      text-decoration: underline;
+    }
+
+    .markdown blockquote {
+      border-left: 3px solid rgba(88, 166, 255, 0.4);
+      padding-left: 14px;
+      color: rgba(203, 213, 225, 0.85);
+      margin: 1em 0;
+    }
+
+    .markdown table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1em 0;
+    }
+
+    .markdown th,
+    .markdown td {
+      border: 1px solid rgba(110, 118, 129, 0.3);
+      padding: 8px 10px;
+      text-align: left;
+    }
+
+    .markdown th {
+      background: rgba(110, 118, 129, 0.15);
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    @media (max-width: 900px) {
+      #app {
+        grid-template-columns: 1fr;
+      }
+
+      .sidebar {
+        height: 40vh;
+      }
+
+      .content {
+        height: 60vh;
+      }
+
+      .toolbar {
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <h1>Notes Explorer</h1>
+        <button id="toggleNav">Hide</button>
+      </div>
+      <input id="search" placeholder="Search files…" autocomplete="off" />
+      <div class="tree" id="tree"></div>
+    </aside>
+    <section class="content">
+      <div class="toolbar">
+        <h2 id="currentName">Select a file</h2>
+        <div>
+          <button id="toggleFull">Full screen</button>
+          <button id="openRaw">Open raw</button>
+        </div>
+      </div>
+      <article class="markdown" id="content">
+        <p>Select a Markdown file from the left to view its rendered contents.</p>
+      </article>
+    </section>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script>
+    const INDEX_PATH = "md_index.json";
+    const fileCache = new Map();
+
+    function makeElement(tag, props = {}, ...children) {
+      const el = document.createElement(tag);
+      Object.entries(props).forEach(([key, value]) => {
+        if (key === "class") el.className = value;
+        else if (key === "dataset") Object.assign(el.dataset, value);
+        else if (key.startsWith("on") && typeof value === "function") el.addEventListener(key.substring(2), value);
+        else el.setAttribute(key, value);
+      });
+      children.flat().forEach((child) => {
+        if (child == null) return;
+        el.append(typeof child === "string" ? document.createTextNode(child) : child);
+      });
+      return el;
+    }
+
+    async function loadIndex() {
+      try {
+        const resp = await fetch(INDEX_PATH);
+        if (!resp.ok) throw new Error(`Failed to load index: ${resp.status}`);
+        return resp.json();
+      } catch (err) {
+        document.getElementById("content").innerHTML = `<p style='color: #ff6b6b;'>Unable to load index. Make sure <code>${INDEX_PATH}</code> exists and is served.</p><p>${err.message}</p>`;
+        throw err;
+      }
+    }
+
+    function buildTree(node, container, filter) {
+      const list = makeElement("ul");
+      const children = (node.children || []).filter((child) => {
+        if (!filter) return true;
+        if (child.type === "file") return child.name.toLowerCase().includes(filter);
+        return child.children && child.children.some((c) => filterMatch(c, filter));
+      });
+      for (const child of children) {
+        const item = makeElement("li");
+        if (child.type === "dir") {
+          const folder = makeElement("div", { class: "folder" });
+          const btn = makeElement(
+            "button",
+            {
+              onclick: () => {
+                folder.classList.toggle("open");
+              },
+            },
+            child.name
+          );
+          folder.appendChild(btn);
+          const subtree = makeElement("div", { class: "subtree" });
+          const childList = buildTree(child, subtree, filter);
+          if (childList) subtree.appendChild(childList);
+          folder.appendChild(subtree);
+          item.appendChild(folder);
+        } else {
+          const fileBtn = makeElement(
+            "button",
+            {
+              onclick: () => selectFile(child),
+            },
+            child.name
+          );
+          item.classList.add("file");
+          item.appendChild(fileBtn);
+        }
+        list.appendChild(item);
+      }
+      return list.childElementCount ? list : null;
+    }
+
+    function filterMatch(node, filter) {
+      if (!node) return false;
+      if (node.type === "file") return node.name.toLowerCase().includes(filter);
+      return (node.children || []).some((child) => filterMatch(child, filter));
+    }
+
+    function clearSelected() {
+      document.querySelectorAll(".tree .selected").forEach((el) => el.classList.remove("selected"));
+    }
+
+    function selectFile(file) {
+      clearSelected();
+      const buttons = Array.from(document.querySelectorAll(".tree .file button"));
+      const selected = buttons.find((btn) => btn.textContent === file.name);
+      selected?.closest("li")?.classList.add("selected");
+
+      document.getElementById("currentName").textContent = file.name;
+      loadMarkdown(file.path);
+    }
+
+    async function loadMarkdown(path) {
+      const contentEl = document.getElementById("content");
+      contentEl.innerHTML = "<p style='opacity:0.7;'>Loading…</p>";
+      if (fileCache.has(path)) {
+        contentEl.innerHTML = marked.parse(fileCache.get(path));
+        return;
+      }
+      try {
+        const resp = await fetch(path);
+        if (!resp.ok) throw new Error(`Failed to load ${path}: ${resp.status}`);
+        const md = await resp.text();
+        fileCache.set(path, md);
+        contentEl.innerHTML = marked.parse(md);
+      } catch (err) {
+        contentEl.innerHTML = `<p style='color: #ff6b6b;'>Unable to load file: <code>${path}</code></p><p>${err.message}</p>`;
+      }
+    }
+
+    function setupUi(indexData) {
+      const treeContainer = document.getElementById("tree");
+      const root = indexData;
+      function refresh(filter = "") {
+        treeContainer.innerHTML = "";
+        const tree = buildTree(root, treeContainer, filter.toLowerCase());
+        if (tree) treeContainer.appendChild(tree);
+      }
+
+      const search = document.getElementById("search");
+      search.addEventListener("input", () => refresh(search.value.trim()));
+
+      document.getElementById("toggleNav").addEventListener("click", () => {
+        const sidebar = document.querySelector(".sidebar");
+        const isHidden = sidebar.style.display === "none";
+        sidebar.style.display = isHidden ? "flex" : "none";
+        document.getElementById("toggleNav").textContent = isHidden ? "Hide" : "Show";
+      });
+
+      const fullBtn = document.getElementById("toggleFull");
+      fullBtn.addEventListener("click", () => {
+        if (!document.fullscreenElement) {
+          document.documentElement.requestFullscreen().catch(() => {});
+          fullBtn.textContent = "Exit full";
+        } else {
+          document.exitFullscreen();
+          fullBtn.textContent = "Full screen";
+        }
+      });
+
+      document.getElementById("openRaw").addEventListener("click", () => {
+        const title = document.getElementById("currentName").textContent;
+        const file = Array.from(fileCache.keys()).find((k) => k.endsWith(title));
+        if (file) window.open(file, "_blank");
+      });
+
+      refresh();
+    }
+
+    (async () => {
+      const indexData = await loadIndex();
+      setupUi(indexData);
+    })();
+  </script>
+</body>
+</html>
