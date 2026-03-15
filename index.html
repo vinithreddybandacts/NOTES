@@ -1,493 +1,637 @@
 <!DOCTYPE html>
 <html lang="en">
-	<head>
-		<meta charset="UTF-8" />
-		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-		<title>Notes • File Browser</title>
-		<style>
-			:root {
-				--surface: rgba(15, 18, 25, 0.85);
-				--surface-strong: rgba(18, 23, 35, 0.95);
-				--accent: #4d9bf0;
-				--accent-2: #62d8b6;
-				--text: #e9eefc;
-				--muted: rgba(233, 238, 252, 0.65);
-				--shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
-				--radius: 18px;
-				--radius-sm: 12px;
-				--font: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-				--animation: 220ms cubic-bezier(0.22, 1, 0.36, 1);
-			}
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>File Manager</title>
+  <style>
+    :root {
+      --bg: #f6f7fb;
+      --surface: #ffffff;
+      --surface-2: rgba(255, 255, 255, 0.92);
+      --text: #1c1f25;
+      --muted: #6b7280;
+      --primary: #1d4ed8;
+      --primary-2: #2563eb;
+      --shadow: 0 8px 28px rgba(0, 0, 0, 0.08);
+      --radius: 18px;
+      --radius-sm: 12px;
+      --gap: 14px;
+      --font: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji";
+    }
 
-			* {
-				box-sizing: border-box;
-			}
+    * {
+      box-sizing: border-box;
+    }
 
-			html,
-			body {
-				height: 100%;
-			}
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: var(--font);
+      background: radial-gradient(circle at top, rgba(29, 78, 216, 0.12), transparent 55%), var(--bg);
+      color: var(--text);
+      overflow: hidden;
+    }
 
-			body {
-				margin: 0;
-				font-family: var(--font);
-				color: var(--text);
-				background: radial-gradient(circle at 15% 25%, rgba(77, 155, 240, 0.26), transparent 60%),
-					radial-gradient(circle at 75% 40%, rgba(98, 216, 182, 0.22), transparent 55%),
-					radial-gradient(circle at 30% 85%, rgba(248, 203, 76, 0.16), transparent 65%),
-					radial-gradient(circle at 70% 75%, rgba(232, 97, 146, 0.14), transparent 60%),
-					#070912;
-				overflow: hidden;
-			}
+    button, a {
+      font-family: inherit;
+      outline: none;
+    }
 
-			#app {
-				height: 100%;
-				display: flex;
-				flex-direction: column;
-			}
+    /* Top header */
+    header {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      width: 100%;
+      height: 88px;
+      padding: 0 16px;
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      background: linear-gradient(135deg, var(--primary), var(--primary-2));
+      color: #fff;
+      border-bottom-left-radius: 24px;
+      border-bottom-right-radius: 24px;
+      box-shadow: var(--shadow);
+      z-index: 20;
+    }
 
-			.topbar {
-				padding: 18px 20px 14px;
-				display: flex;
-				align-items: center;
-				justify-content: space-between;
-				gap: 12px;
-			}
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
 
-			.topbar h1 {
-				margin: 0;
-				font-size: 1.1rem;
-				letter-spacing: 0.05em;
-				font-weight: 600;
-			}
+    .icon-btn {
+      width: 44px;
+      height: 44px;
+      border-radius: 16px;
+      border: none;
+      background: rgba(255,255,255,0.18);
+      display: grid;
+      place-items: center;
+      color: rgba(255,255,255,0.92);
+      cursor: pointer;
+      transition: background 140ms ease;
+    }
 
-			.toolbar {
-				display: flex;
-				gap: 10px;
-				align-items: center;
-			}
+    .icon-btn:hover {
+      background: rgba(255,255,255,0.26);
+    }
 
-			.toolbar button {
-				border: 0;
-				padding: 10px 12px;
-				border-radius: 999px;
-				background: rgba(255, 255, 255, 0.075);
-				color: var(--text);
-				display: inline-flex;
-				align-items: center;
-				gap: 8px;
-				font-size: 0.9rem;
-				cursor: pointer;
-				transition: transform var(--animation), background var(--animation);
-			}
+    .icon-btn:active {
+      background: rgba(255,255,255,0.34);
+    }
 
-			.toolbar button:hover {
-				transform: translateY(-1px);
-				background: rgba(255, 255, 255, 0.12);
-			}
+    .header-title {
+      font-size: 24px;
+      font-weight: 700;
+      letter-spacing: -0.015em;
+      line-height: 1.1;
+      margin: 0;
+    }
 
-			.toolbar button:active {
-				transform: translateY(0);
-			}
+    /* Toolbar */
+    .toolbar {
+      position: fixed;
+      top: 88px;
+      left: 0;
+      right: 0;
+      height: 52px;
+      padding: 0 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      background: rgba(255,255,255,0.75);
+      -webkit-backdrop-filter: blur(12px);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(20, 24, 28, 0.08);
+      z-index: 18;
+    }
 
-			.toolbar input {
-				border: 0;
-				background: rgba(255, 255, 255, 0.08);
-				padding: 10px 12px;
-				border-radius: 999px;
-				color: var(--text);
-				width: 220px;
-				letter-spacing: 0.01em;
-			}
+    .toolbar-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
 
-			.toolbar input::placeholder {
-				color: var(--muted);
-			}
+    .toolbar-label {
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
+      color: var(--muted);
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+    }
 
-			.content {
-				flex: 1;
-				padding: 0 20px 20px;
-				overflow: auto;
-				scrollbar-width: thin;
-				scrollbar-color: rgba(255, 255, 255, 0.18) transparent;
-			}
+    .toolbar-label svg {
+      width: 14px;
+      height: 14px;
+      stroke: currentColor;
+      stroke-width: 2;
+      fill: none;
+    }
 
-			.content::-webkit-scrollbar {
-				width: 10px;
-			}
+    .toolbar-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
 
-			.content::-webkit-scrollbar-thumb {
-				background: rgba(255, 255, 255, 0.18);
-				border-radius: 999px;
-			}
+    .toolbar-btn {
+      width: 40px;
+      height: 40px;
+      border-radius: 14px;
+      border: none;
+      background: rgba(29, 78, 216, 0.15);
+      display: grid;
+      place-items: center;
+      cursor: pointer;
+      color: var(--primary);
+      transition: transform 120ms ease, background 140ms ease;
+    }
 
-			.breadcrumb {
-				display: flex;
-				gap: 10px;
-				padding: 10px 14px;
-				margin: 0 18px 10px;
-				border-radius: 999px;
-				background: rgba(12, 15, 22, 0.75);
-				backdrop-filter: blur(18px);
-				align-items: center;
-				flex-wrap: wrap;
-			}
+    .toolbar-btn:hover {
+      transform: translateY(-1px);
+      background: rgba(29, 78, 216, 0.22);
+    }
 
-			.breadcrumb span {
-				font-size: 0.85rem;
-				color: var(--muted);
-			}
+    .toolbar-btn:active {
+      transform: translateY(0);
+    }
 
-			.breadcrumb button {
-				border: 0;
-				background: none;
-				color: var(--text);
-				font-size: 0.85rem;
-				cursor: pointer;
-				padding: 4px;
-				border-radius: 999px;
-				transition: background var(--animation);
-			}
+    /* Main content */
+    main {
+      position: absolute;
+      top: calc(88px + 52px);
+      bottom: 0;
+      left: 0;
+      right: 0;
+      overflow-y: auto;
+      padding: 14px 16px 24px;
+    }
 
-			.breadcrumb button:hover {
-				background: rgba(255, 255, 255, 0.08);
-			}
+    .breadcrumb {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding: 10px 12px;
+      margin-bottom: 10px;
+      border-radius: var(--radius-sm);
+      background: rgba(255,255,255,0.70);
+      border: 1px solid rgba(20, 24, 28, 0.08);
+    }
 
-			.items {
-				display: grid;
-				grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-				gap: 12px;
-			}
+    .breadcrumb button {
+      all: unset;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      color: var(--primary);
+      font-weight: 600;
+    }
 
-			.items.list {
-				display: flex;
-				flex-direction: column;
-			}
+    .breadcrumb button:hover {
+      text-decoration: underline;
+    }
 
-			.item {
-				display: flex;
-				flex-direction: column;
-				padding: 18px 14px 16px;
-				border-radius: var(--radius);
-				background: rgba(255, 255, 255, 0.06);
-				box-shadow: var(--shadow);
-				backdrop-filter: blur(16px);
-				cursor: pointer;
-				transition: transform var(--animation), background var(--animation);
-				position: relative;
-				overflow: hidden;
-				min-height: 135px;
-			}
+    .breadcrumb span {
+      font-size: 13px;
+      color: var(--muted);
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
 
-			.items.list .item {
-				flex-direction: row;
-				align-items: center;
-				padding: 12px 14px;
-				min-height: 60px;
-			}
+    .items {
+      display: grid;
+      grid-template-columns: repeat(1, minmax(0, 1fr));
+      gap: 12px;
+    }
 
-			.item:hover {
-				transform: translateY(-3px);
-				background: rgba(255, 255, 255, 0.11);
-			}
+    .item {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 14px 14px;
+      border-radius: var(--radius-sm);
+      background: rgba(255,255,255,0.80);
+      border: 1px solid rgba(20, 24, 28, 0.06);
+      box-shadow: 0 1px 6px rgba(0, 0, 0, 0.05);
+      cursor: pointer;
+      transition: transform 120ms ease, box-shadow 120ms ease;
+      min-height: 60px;
+    }
 
-			.item svg {
-				width: 38px;
-				height: 38px;
-				flex-shrink: 0;
-			}
+    .item:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.09);
+    }
 
-			.items.list .item svg {
-				width: 30px;
-				height: 30px;
-			}
+    .item:active {
+      transform: translateY(0);
+    }
 
-			.item-body {
-				margin-top: 14px;
-				display: flex;
-				flex-direction: column;
-				gap: 8px;
-				flex: 1;
-			}
+    .item-icon {
+      flex: none;
+      width: 38px;
+      height: 38px;
+      border-radius: 14px;
+      display: grid;
+      place-items: center;
+      background: rgba(29, 78, 216, 0.10);
+      color: var(--primary);
+      font-size: 18px;
+    }
 
-			.items.list .item-body {
-				margin-top: 0;
-				margin-left: 14px;
-			}
+    .item-content {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
 
-			.item-title {
-				font-weight: 600;
-				font-size: 0.95rem;
-				line-height: 1.2;
-				word-break: break-word;
-			}
+    .item-title {
+      font-size: 16px;
+      font-weight: 600;
+      line-height: 1.2;
+      color: var(--text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
 
-			.item-meta {
-				font-size: 0.77rem;
-				color: var(--muted);
-				line-height: 1.25;
-			}
+    .item-subtitle {
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.3;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
 
-			.item-badge {
-				position: absolute;
-				top: 12px;
-				right: 12px;
-				padding: 2px 8px;
-				border-radius: 999px;
-				background: rgba(255, 255, 255, 0.1);
-				font-size: 0.7rem;
-				color: var(--muted);
-				text-transform: uppercase;
-				letter-spacing: 0.07em;
-			}
+    .item-meta {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 12px;
+      color: var(--muted);
+    }
 
-			.empty {
-				margin: 60px auto;
-				padding: 24px;
-				max-width: 520px;
-				text-align: center;
-				border-radius: var(--radius);
-				background: rgba(255, 255, 255, 0.07);
-				box-shadow: var(--shadow);
-			}
+    .item-meta span {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
 
-			.empty h2 {
-				margin: 0 0 10px;
-				font-size: 1.2rem;
-			}
+    .item-meta svg {
+      width: 14px;
+      height: 14px;
+      stroke: currentColor;
+      stroke-width: 1.8;
+      fill: none;
+      opacity: 0.85;
+    }
 
-			.empty p {
-				margin: 0;
-				color: var(--muted);
-			}
+    /* Grid view */
+    .gridView .items {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
 
-			@media (max-width: 620px) {
-				.toolbar input {
-					width: 150px;
-				}
+    @media (min-width: 940px) {
+      .gridView .items {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
 
-				.items {
-					grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-				}
-			}
-		</style>
-	</head>
-	<body>
-		<div id="app">
-			<header class="topbar">
-				<h1>Notes • File Browser</h1>
-				<div class="toolbar">
-					<input id="filter" placeholder="Search files…" autocomplete="off" />
-					<button id="toggleView" title="Toggle list/grid view">
-						<span id="viewLabel">Grid</span>
-						<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-							<path d="M3 3h7v7H3z" />
-							<path d="M14 3h7v7h-7z" />
-							<path d="M3 14h7v7H3z" />
-							<path d="M14 14h7v7h-7z" />
-						</svg>
-					</button>
-				</div>
-			</header>
+      header {
+        height: 96px;
+      }
 
-			<nav class="breadcrumb" aria-label="Breadcrumb" id="breadcrumb"></nav>
+      .header-title {
+        font-size: 28px;
+      }
 
-			<main class="content" id="content">
-				<div class="items" id="items"></div>
-			</main>
-		</div>
+      .toolbar {
+        height: 56px;
+      }
 
-		<script>
-			const icons = {
-				folder: `
-					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-						<path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h6l2 2h8a2 2 0 0 1 2 2z" />
-					</svg>
-				`,
-				file: `
-					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-						<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-						<path d="M14 2v6h6" />
-					</svg>
-				`,
-				json: `
-					<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-						<path d="M10 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-5" />
-						<path d="M14 3l7 7" />
-						<path d="M7 12h3" />
-						<path d="M7 16h3" />
-						<path d="M12 14h4" />
-						<path d="M12 18h4" />
-					</svg>
-				`,
-			};
+      .item {
+        padding: 16px 16px;
+      }
 
-			const state = {
-				view: 'grid',
-				path: '.',
-				filter: '',
-				manifest: [],
-				structure: new Map(),
-			};
+      .item-title {
+        font-size: 18px;
+      }
 
-			const itemsEl = document.getElementById('items');
-			const breadcrumbEl = document.getElementById('breadcrumb');
-			const toggleBtn = document.getElementById('toggleView');
-			const viewLabel = document.getElementById('viewLabel');
-			const filterInput = document.getElementById('filter');
+      .item-subtitle {
+        font-size: 14px;
+      }
 
-			const humanSize = (bytes) => {
-				if (bytes === 0) return '0 B';
-				const units = ['B', 'KB', 'MB', 'GB', 'TB'];
-				let i = 0;
-				let v = bytes;
-				while (v >= 1024 && i < units.length - 1) {
-					v /= 1024;
-					i += 1;
-				}
-				return `${v.toFixed(1)} ${units[i]}`;
-			};
+      .toolbar-label {
+        font-size: 14px;
+      }
 
-			const formatDate = (epoch) => {
-				if (!epoch) return '';
-				const d = new Date(epoch);
-				return d.toLocaleString(undefined, {
-					month: 'short',
-					day: 'numeric',
-					hour: '2-digit',
-					minute: '2-digit',
-				});
-			};
+      .toolbar-btn {
+        width: 44px;
+        height: 44px;
+      }
+    }
 
-			const normalizePath = (path) => path.replace(/\\/g, '/').replace(/\/\/+/, '/');
+    /* Hide scrollbars on webkit for cleaner appearance */
+    main::-webkit-scrollbar {
+      width: 8px;
+    }
 
-			const buildStructure = () => {
-				state.structure.clear();
-				state.manifest.forEach((entry) => {
-					const normalized = normalizePath(entry.path);
-					const folder = normalized.includes('/') ? normalized.replace(/\/[^/]*$/, '') : '.';
-					const key = normalizePath(folder);
-					if (!state.structure.has(key)) state.structure.set(key, []);
-					state.structure.get(key).push(entry);
-				});
-			};
+    main::-webkit-scrollbar-thumb {
+      background: rgba(20, 24, 28, 0.12);
+      border-radius: 999px;
+    }
 
-			const updateBreadcrumb = () => {
-				const active = normalizePath(state.path) || '.';
-				const parts = active === '.' ? ['.'] : active.split('/');
-				breadcrumbEl.innerHTML = '';
-				const buildPath = (idx) => (idx === 0 ? '.' : parts.slice(0, idx + 1).join('/'));
-				parts.forEach((part, idx) => {
-					const isLast = idx === parts.length - 1;
-					if (idx > 0) {
-						const sep = document.createElement('span');
-						sep.textContent = '›';
-						breadcrumbEl.appendChild(sep);
-					}
-					if (isLast) {
-						const span = document.createElement('span');
-						span.textContent = part || '.';
-						breadcrumbEl.appendChild(span);
-					} else {
-						const btn = document.createElement('button');
-						btn.textContent = part || '.';
-						btn.addEventListener('click', () => {
-							state.path = buildPath(idx);
-							render();
-						});
-						breadcrumbEl.appendChild(btn);
-					}
-				});
-			};
+    main::-webkit-scrollbar-track {
+      background: transparent;
+    }
 
-			const getChildren = () => {
-				const active = normalizePath(state.path) || '.';
-				const list = state.structure.get(active) || [];
-				const filter = state.filter.trim().toLowerCase();
-				if (!filter) return list;
-				return list.filter((item) => item.name.toLowerCase().includes(filter));
-			};
+    /* Footer info */
+    .footer {
+      margin-top: 18px;
+      text-align: center;
+      font-size: 12px;
+      color: rgba(28, 31, 37, 0.6);
+    }
 
-			const render = () => {
-				updateBreadcrumb();
-				itemsEl.classList.toggle('list', state.view === 'list');
-				viewLabel.textContent = state.view === 'grid' ? 'Grid' : 'List';
+  </style>
+</head>
+<body>
+  <header>
+    <div class="header-left">
+      <button class="icon-btn" type="button" aria-label="Menu">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+        </svg>
+      </button>
+      <h1 class="header-title">Folders</h1>
+    </div>
+    <button class="icon-btn" type="button" aria-label="Search">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2" />
+        <path d="M16.5 16.5l4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+      </svg>
+    </button>
+  </header>
 
-				const children = getChildren();
-				itemsEl.innerHTML = '';
+  <section class="toolbar">
+    <div class="toolbar-left">
+      <span class="toolbar-label" id="sortLabel" tabindex="0" role="button" aria-label="Sort">
+        Name
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M6 9l6 6 6-6" />
+        </svg>
+      </span>
+    </div>
+    <div class="toolbar-right">
+      <button class="toolbar-btn" id="toggleView" type="button" aria-label="Toggle view">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M4 4h7v7H4V4zm9 0h7v7h-7V4zM4 13h7v7H4v-7zm9 0h7v7h-7v-7z" stroke="currentColor" stroke-width="1.5" />
+        </svg>
+      </button>
+    </div>
+  </section>
 
-				if (!children.length) {
-					itemsEl.innerHTML = `
-						<div class="empty">
-							<h2>No items found.</h2>
-							<p>Try a different folder or clear the search filter.</p>
-						</div>
-					`;
-					return;
-				}
+  <main>
+    <nav class="breadcrumb" aria-label="Breadcrumb" hidden>
+      <button id="breadcrumbHome" type="button">Home</button>
+      <span aria-hidden="true">›</span>
+      <div id="breadcrumbTrail"></div>
+    </nav>
 
-				children.sort((a, b) => {
-					if (a.type !== b.type) return a.type === 'dir' ? -1 : 1;
-					return a.name.localeCompare(b.name, undefined, { sensitivity: 'base' });
-				});
+    <section class="items" id="items" aria-label="File list"></section>
 
-				for (const item of children) {
-					const el = document.createElement('button');
-					el.type = 'button';
-					el.className = 'item';
-					el.innerHTML = `
-						<div class="icon">${item.type === 'dir' ? icons.folder : icons.file}</div>
-						<div class="item-body">
-							<div class="item-title">${item.name}</div>
-							<div class="item-meta">${item.type === 'dir' ? 'Folder' : item.extension.toUpperCase() + ' • ' + humanSize(item.size)} · ${formatDate(item.mtime)}</div>
-						</div>
-						<div class="item-badge">${item.type === 'dir' ? 'DIR' : item.extension.toUpperCase() || 'FILE'}</div>
-					`;
+    <div class="footer" aria-hidden="true">
+      Built as a responsive static file manager UI mockup.
+    </div>
+  </main>
 
-					el.addEventListener('click', () => {
-						if (item.type === 'dir') {
-							state.path = normalizePath((state.path === '.' ? '' : state.path) + '/' + item.name);
-							render();
-						} else {
-							const url = encodeURI(normalizePath(item.path));
-							window.open(url, '_blank');
-						}
-					});
+  <script>
+    const sampleData = {
+      name: 'root',
+      type: 'folder',
+      children: [
+        {
+          name: 'Documents',
+          type: 'folder',
+          children: [
+            { name: 'Resume.pdf', type: 'file', size: '124 KB', modified: 'Mar 12, 2026' },
+            { name: 'Project-Plan.docx', type: 'file', size: '84 KB', modified: 'Mar 8, 2026' },
+            { name: 'Meeting notes - Q1.txt', type: 'file', size: '9 KB', modified: 'Mar 2, 2026' },
+          ],
+        },
+        {
+          name: 'Photos',
+          type: 'folder',
+          children: [
+            { name: 'Vacation', type: 'folder', children: [
+              { name: 'beach-sunset.jpg', type: 'file', size: '1.2 MB', modified: 'Feb 23, 2026' },
+              { name: 'hiking-peak.png', type: 'file', size: '1.8 MB', modified: 'Feb 23, 2026' },
+            ] },
+            { name: 'Family', type: 'folder', children: [
+              { name: 'birthday-2025.jpg', type: 'file', size: '2.1 MB', modified: 'Nov 16, 2025' },
+            ] },
+          ],
+        },
+        {
+          name: 'Archives',
+          type: 'folder',
+          children: [
+            { name: 'app-release-v1.2.zip', type: 'file', size: '26 MB', modified: 'Jan 4, 2026' },
+            { name: 'logs-2025.tar.gz', type: 'file', size: '42 MB', modified: 'Dec 31, 2025' },
+          ],
+        },
+        { name: 'ToDo.txt', type: 'file', size: '5 KB', modified: 'Mar 14, 2026' },
+        { name: 'Budget.xlsx', type: 'file', size: '68 KB', modified: 'Mar 9, 2026' },
+      ],
+    };
 
-					itemsEl.appendChild(el);
-				}
-			};
+    const state = {
+      current: sampleData,
+      breadcrumbs: [],
+      viewMode: 'list',
+      sortBy: 'name',
+      sortDirection: 'asc',
+    };
 
-			const loadManifest = async () => {
-				try {
-					const response = await fetch('manifest.json', { cache: 'no-cache' });
-					if (!response.ok) throw new Error('Manifest load failed');
-					const data = await response.json();
-					state.manifest = data;
-					buildStructure();
-					render();
-				} catch (error) {
-					itemsEl.innerHTML = `
-						<div class="empty">
-							<h2>Unable to load file list.</h2>
-							<p>Ensure <code>manifest.json</code> exists in the same folder and that you're serving the directory over HTTP (e.g. <code>python -m http.server</code>).</p>
-						</div>
-					`;
-					console.error(error);
-				}
-			};
+    const itemContainer = document.getElementById('items');
+    const breadcrumbNav = document.querySelector('.breadcrumb');
+    const breadcrumbTrail = document.getElementById('breadcrumbTrail');
+    const toggleViewBtn = document.getElementById('toggleView');
 
-			toggleBtn.addEventListener('click', () => {
-				state.view = state.view === 'grid' ? 'list' : 'grid';
-				render();
-			});
+    const icons = {
+      folder: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h6l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z" stroke="currentColor" stroke-width="1.5" fill="rgba(29,78,216,0.12)"/></svg>',
+      file: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z" stroke="currentColor" stroke-width="1.5" fill="rgba(29,78,216,0.10)"/><path d="M14 2v6h6" stroke="currentColor" stroke-width="1.5"/></svg>',
+      archive: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 7h16v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7z" stroke="currentColor" stroke-width="1.5" fill="rgba(29,78,216,0.10)"/><path d="M4 7l2-4h12l2 4" stroke="currentColor" stroke-width="1.5"/><path d="M9 13h6" stroke="currentColor" stroke-width="1.5"/></svg>',
+      default: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.5" fill="rgba(29,78,216,0.10)"/></svg>',
+    };
 
-			filterInput.addEventListener('input', (ev) => {
-				state.filter = ev.target.value;
-				render();
-			});
+    const metadataTemplate = ({ type, size, modified, childCount }) => {
+      const blocks = [];
+      if (type === 'folder') {
+        blocks.push(`<span><svg viewBox="0 0 24 24"><path d="M8 12h8" /></svg>${childCount} items</span>`);
+      }
+      if (size) {
+        blocks.push(`<span><svg viewBox="0 0 24 24"><path d="M12 17v-6M9 14h6" /></svg>${size}</span>`);
+      }
+      if (modified) {
+        blocks.push(`<span><svg viewBox="0 0 24 24"><path d="M12 8v4l3 2" /><path d="M12 4a8 8 0 1 0 8 8" /></svg>${modified}</span>`);
+      }
+      return blocks.join('');
+    };
 
-			loadManifest();
-		</script>
-	</body>
+    function sortItems(items) {
+      return items.slice().sort((a, b) => {
+        const aKey = (a[state.sortBy] || '').toString().toLowerCase();
+        const bKey = (b[state.sortBy] || '').toString().toLowerCase();
+        if (aKey === bKey) return 0;
+        const compare = aKey > bKey ? 1 : -1;
+        return state.sortDirection === 'asc' ? compare : -compare;
+      });
+    }
+
+    function renderBreadcrumbs() {
+      const trail = state.breadcrumbs;
+      if (!trail.length) {
+        breadcrumbNav.hidden = true;
+        return;
+      }
+
+      breadcrumbNav.hidden = false;
+      breadcrumbTrail.innerHTML = '';
+
+      trail.forEach((crumb, index) => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.textContent = crumb.name;
+        btn.addEventListener('click', () => {
+          const destination = state.breadcrumbs[index];
+          state.current = destination.node;
+          state.breadcrumbs = state.breadcrumbs.slice(0, index);
+          render();
+        });
+        breadcrumbTrail.appendChild(btn);
+        if (index < trail.length - 1) {
+          const separator = document.createElement('span');
+          separator.setAttribute('aria-hidden', 'true');
+          separator.textContent = '›';
+          breadcrumbTrail.appendChild(separator);
+        }
+      });
+    }
+
+    function buildItemRow(item) {
+      const wrapper = document.createElement('button');
+      wrapper.setAttribute('type', 'button');
+      wrapper.className = 'item';
+      wrapper.addEventListener('click', () => {
+        if (item.type === 'folder') {
+          state.breadcrumbs.push({ name: item.name, node: item });
+          state.current = item;
+          render();
+        }
+      });
+
+      const icon = document.createElement('div');
+      icon.className = 'item-icon';
+      const iconSvg = item.type === 'folder' ? icons.folder : item.type === 'archive' ? icons.archive : icons.file;
+      icon.innerHTML = iconSvg;
+
+      const content = document.createElement('div');
+      content.className = 'item-content';
+
+      const title = document.createElement('div');
+      title.className = 'item-title';
+      title.textContent = item.name;
+
+      const subtitle = document.createElement('div');
+      subtitle.className = 'item-subtitle';
+      subtitle.textContent = item.type === 'folder'
+        ? `${item.children?.length ?? 0} items` : `${item.size || '–'} · ${item.modified || 'Unknown'}`;
+
+      const meta = document.createElement('div');
+      meta.className = 'item-meta';
+      meta.innerHTML = metadataTemplate({
+        type: item.type,
+        size: item.size,
+        modified: item.modified,
+        childCount: item.children?.length,
+      });
+
+      content.append(title, subtitle, meta);
+      wrapper.append(icon, content);
+      return wrapper;
+    }
+
+    function render() {
+      itemContainer.innerHTML = '';
+      renderBreadcrumbs();
+
+      const children = state.current.children || [];
+      const sorted = sortItems(children);
+
+      if (!sorted.length) {
+        const empty = document.createElement('div');
+        empty.style.padding = '32px 16px';
+        empty.style.textAlign = 'center';
+        empty.style.color = 'rgba(28, 31, 37, 0.7)';
+        empty.innerHTML = `<strong>Nothing here yet</strong><div style="margin-top:6px;font-size:13px;">Add files or folders to explore.</div>`;
+        itemContainer.appendChild(empty);
+        return;
+      }
+
+      sorted.forEach(item => {
+        itemContainer.appendChild(buildItemRow(item));
+      });
+    }
+
+    function updateViewMode() {
+      document.body.classList.toggle('gridView', state.viewMode === 'grid');
+      const svg = state.viewMode === 'grid'
+        ? `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 4h7v7H4V4zm9 0h7v7h-7V4zM4 13h7v7H4v-7zm9 0h7v7h-7v-7z" stroke="currentColor" stroke-width="1.5"/></svg>`
+        : `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>`;
+      toggleViewBtn.innerHTML = svg;
+      toggleViewBtn.setAttribute('aria-label', state.viewMode === 'grid' ? 'Switch to list view' : 'Switch to grid view');
+    }
+
+    toggleViewBtn.addEventListener('click', () => {
+      state.viewMode = state.viewMode === 'list' ? 'grid' : 'list';
+      updateViewMode();
+    });
+
+    document.getElementById('breadcrumbHome').addEventListener('click', () => {
+      state.current = sampleData;
+      state.breadcrumbs = [];
+      render();
+    });
+
+    // Show / hide breadcrumb based on navigation
+    render();
+    updateViewMode();
+
+    // Recommend resizing title responsiveness
+    window.addEventListener('resize', () => {
+      const headerTitle = document.querySelector('.header-title');
+      if (window.innerWidth < 360) {
+        headerTitle.style.fontSize = '20px';
+      } else {
+        headerTitle.style.fontSize = '';
+      }
+    });
+  </script>
+</body>
 </html>
