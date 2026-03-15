@@ -261,6 +261,45 @@
 				transition: opacity 200ms ease;
 			}
 
+					.back-btn {
+						position: fixed;
+						top: 18px;
+						left: 18px;
+						z-index: 999;
+						border: 1px solid rgba(255, 255, 255, 0.16);
+						background: rgba(0, 0, 0, 0.64);
+						color: rgba(255, 255, 255, 0.92);
+						padding: 10px 14px;
+						border-radius: 999px;
+						font-size: 13px;
+						-webkit-backdrop-filter: blur(12px);
+						backdrop-filter: blur(12px);
+						cursor: pointer;
+						opacity: 0;
+						pointer-events: none;
+						transition: opacity 170ms ease;
+					}
+
+					body.focus .back-btn {
+						opacity: 1;
+						pointer-events: auto;
+					}
+
+					body.focus header,
+					body.focus .sidebar {
+						opacity: 0;
+						pointer-events: none;
+					}
+
+					body.focus main {
+						grid-template-columns: 1fr;
+					}
+
+					body.focus .content {
+						border-radius: 18px;
+						margin: 14px;
+					}
+
 			.toast.show {
 				opacity: 1;
 			}
@@ -303,6 +342,7 @@
 				</div>
 				<input id="search" type="search" placeholder="Search notes & folders…" autocomplete="off" />
 			</header>
+				<button class="back-btn" id="backBtn" type="button" title="Back to file list">← Files</button>
 			<main>
 				<aside class="sidebar" aria-label="File tree">
 					<header>Files</header>
@@ -337,9 +377,11 @@
 			const metaEl = document.getElementById("meta");
 			const contentEl = document.getElementById("content");
 			const searchEl = document.getElementById("search");
+				const backBtn = document.getElementById("backBtn");
 			const toastEl = document.getElementById("toast");
 
 			let fileTree = [];
+				let expandedFolders = new Set([""]);
 			let activePath = null;
 			let lastFetchAbort = null;
 
@@ -356,6 +398,19 @@
 				const i = Math.floor(Math.log(bytes) / Math.log(1024));
 				return `${(bytes / 1024 ** i).toFixed(1)} ${units[i]}`;
 			}
+
+				function setFocusMode(enabled) {
+					document.body.classList.toggle("focus", enabled);
+				}
+
+				function folderMatches(folder, query) {
+					if (!query) return true;
+					if (folder.name && folder.name.toLowerCase().includes(query)) return true;
+					if (folder.files.some((f) => f.name.toLowerCase().includes(query) || f.path.toLowerCase().includes(query))) {
+						return true;
+					}
+					return Object.values(folder.children).some((c) => folderMatches(c, query));
+				}
 
 			async function fetchRepoTree() {
 				showToast("Loading repository structure…");
@@ -397,28 +452,40 @@
 				const query = filter.trim().toLowerCase();
 				const elements = [];
 
-				function walk(folder, depth) {
-					const children = Object.values(folder.children).sort((a, b) => a.name.localeCompare(b.name));
-					const files = folder.files.slice().sort((a, b) => a.name.localeCompare(b.name));
+					function walk(folder, depth, parentExpanded) {
+						const hasMatch = folderMatches(folder, query);
+						if (!hasMatch) return;
 
-					const folderLabel = folder.name || "root";
-					if (folder.name) {
-						const folderName = folder.name.split("/").pop();
-						if (!query || folderName.toLowerCase().includes(query)) {
-							elements.push({ type: "folder", depth, name: folderName, path: folder.name });
+						const isRoot = folder.name === "";
+						const expanded = expandedFolders.has(folder.name);
+
+						if (!isRoot) {
+							const folderName = folder.name.split("/").pop();
+							elements.push({
+								type: "folder",
+								depth,
+								name: folderName,
+								path: folder.name,
+								expanded,
+							});
 						}
+
+						const showChildren = isRoot || expanded || Boolean(query);
+						if (!parentExpanded || !showChildren) return;
+
+						const children = Object.values(folder.children).sort((a, b) => a.name.localeCompare(b.name));
+						const files = folder.files.slice().sort((a, b) => a.name.localeCompare(b.name));
+
+						files.forEach((file) => {
+							const match = !query || file.name.toLowerCase().includes(query) || file.path.toLowerCase().includes(query);
+							if (!match) return;
+							elements.push({ type: "file", depth: depth + 1, name: file.name, path: file.path, size: file.size });
+						});
+
+						children.forEach((child) => walk(child, depth + 1, showChildren));
 					}
 
-					files.forEach((file) => {
-						const match = !query || file.name.toLowerCase().includes(query) || file.path.toLowerCase().includes(query);
-						if (!match) return;
-						elements.push({ type: "file", depth: depth + 1, name: file.name, path: file.path, size: file.size });
-					});
-
-					children.forEach((child) => walk(child, depth + 1));
-				}
-
-				walk(root, 0);
+					walk(root, 0, true);
 				treeEl.innerHTML = "";
 				elements.forEach((item) => {
 					const el = document.createElement("div");
@@ -427,7 +494,11 @@
 					el.style.paddingLeft = `${12 + item.depth * 14}px`;
 					const icon = document.createElement("span");
 					icon.className = "icon";
-					icon.innerHTML = item.type === "file" ? "📄" : "📁";
+						if (item.type === "file") {
+							icon.innerHTML = "📄";
+						} else {
+							icon.innerHTML = item.expanded ? "▼" : "▶";
+						}
 					const label = document.createElement("span");
 					label.textContent = item.name;
 					el.appendChild(icon);
@@ -440,11 +511,18 @@
 						meta.textContent = formatSize(item.size);
 						el.appendChild(meta);
 					}
-					el.addEventListener("click", () => {
-						if (item.type === "file") {
-							setActivePath(item.path);
-						}
-					});
+						el.addEventListener("click", () => {
+							if (item.type === "file") {
+								setActivePath(item.path);
+							} else {
+								if (expandedFolders.has(item.path)) {
+									expandedFolders.delete(item.path);
+								} else {
+									expandedFolders.add(item.path);
+								}
+								renderFileTree(folders, searchEl.value);
+							}
+						});
 					treeEl.appendChild(el);
 				});
 			}
@@ -454,7 +532,8 @@
 				document.querySelectorAll(".tree-item").forEach((el) => {
 					el.classList.toggle("active", el.dataset.path === path);
 				});
-				loadFile(path);
+					loadFile(path);
+					setFocusMode(true);
 			}
 
 			async function loadFile(path) {
@@ -504,11 +583,19 @@
 				renderFileTree(fileTree, searchEl.value);
 			});
 
+				backBtn.addEventListener("click", () => {
+					setFocusMode(false);
+				});
+
 			window.addEventListener("keydown", (event) => {
 				if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "f") {
 					event.preventDefault();
 					searchEl.focus();
 				}
+
+					if (event.key === "Escape") {
+						setFocusMode(false);
+					}
 			});
 
 			window.addEventListener("load", () => {
